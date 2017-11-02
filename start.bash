@@ -54,7 +54,7 @@ then
 fi
 options="$options -net nic,model=$ether -net user"
 
-# qemu-system-i386 -machine accel=kvm -m $mem
-QEMU="qemu-system-i386 -m $mem $options $cdrom"
+# qemu-system-x86_64 -machine accel=kvm -m $mem
+QEMU="qemu-system-x86_64 -m $mem $options $cdrom"
 
 run $QEMU "$@"
