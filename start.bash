@@ -35,8 +35,6 @@ do
 		drive="$drive,if=none"
 		device='virtio-scsi-pci,id=scsi -device scsi-hd,drive=hd'
 		;;
-	V)	ether=virtio
-		;;
 	*)	usage
 		;;
 	esac
