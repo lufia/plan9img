@@ -5,7 +5,7 @@ set -e
 usage()
 {
 	echo usage: $(basename $0) [-c size] [-dnv] >&2
-	exit 1
+	exit 2
 }
 
 run()
