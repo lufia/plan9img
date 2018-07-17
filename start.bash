@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 usage()
 {
 	echo usage: $(basename $0) [-c size] [-dnv] >&2
@@ -43,7 +45,7 @@ shift $((OPTIND - 1))
 
 if [[ $size != 0 ]]
 then
-	run qemu-img create $disk $size || exit
+	run qemu-img create $disk $size
 fi
 
 options="-smp $ncpu"
