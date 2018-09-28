@@ -4,7 +4,7 @@ set -e
 
 usage()
 {
-	echo usage: $(basename $0) [-c size] [-i 10.0.2.15] [-l port] [-dnsv] >&2
+	echo usage: $(basename $0) [-c size] [-i 10.0.2.15] [-l port] [-m size] [-dnsv] >&2
 	exit 2
 }
 
@@ -26,14 +26,16 @@ ether=e1000
 ipnet=10.0.2.0/24
 ports=()
 
-while getopts :c:i:l:dnsv OPT
+while getopts :c:i:l:m:dnsv OPT
 do
 	case $OPT in
-	c)	size=$OPTARG
+	c)	size="$OPTARG"
 		;;
-	i)	ipnet=$OPTARG
+	i)	ipnet="$OPTARG"
 		;;
 	l)	ports+=("hostfwd=tcp::$OPTARG-:$OPTARG")
+		;;
+	m)	mem="$OPTARG"
 		;;
 	d)	cdrom="-cdrom $iso -boot d"
 		;;
