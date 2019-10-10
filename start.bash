@@ -20,13 +20,12 @@ mem=1G
 
 size=0
 drive="file=$disk,format=raw,id=hd,cache=writethrough"
-disk=
 cdrom=
 ether=e1000
 ipnet=10.0.2.0/24
 ports=()
 
-while getopts :c:i:l:m:dnsv OPT
+while getopts :c:d:i:l:m:nsv OPT
 do
 	case $OPT in
 	c)	size="$OPTARG"
@@ -37,7 +36,8 @@ do
 		;;
 	m)	mem="$OPTARG"
 		;;
-	d)	cdrom="-cdrom $iso -boot d"
+	d)	iso="$OPTARG"
+		cdrom="-drive file=$iso,index=2,media=cdrom -boot order=d"
 		;;
 	n)	run() { echo $*; }
 		;;
@@ -62,10 +62,6 @@ fi
 options=()
 options+=(-smp $ncpu)
 options+=(-drive $drive)
-if [[ -n $disk ]]
-then
-	options+=(-device $disk)
-fi
 if (( ${#ports[@]} > 0 ))
 then
 	hostfwd="$(IFS=,; echo "${ports[*]}")"
@@ -75,7 +71,10 @@ else
 fi
 options+=(-device $ether,netdev=ether0)
 
-# qemu-system-x86_64 -machine accel=kvm -m $mem
-QEMU="qemu-system-x86_64 -m $mem ${options[@]} $cdrom"
-
-run $QEMU "$@"
+case $(uname) in
+Darwin)
+	options+=(-machine type=pc,accel=hvf) ;;
+Linux)
+	options+=(-machine type=pc,accel=kvm) ;;
+esac
+run qemu-system-x86_64 -m $mem ${options[@]} $cdrom "$@"
