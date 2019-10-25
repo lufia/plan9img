@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
+#qemu-img create $disk 10G
 
 set -e
 
 usage()
 {
-	echo usage: $(basename $0) [-c size] [-i 10.0.2.15] [-l port] [-m size] [-dnsv] >&2
+	echo usage: $(basename $0) [[-a disk] ...] [-d iso] [-i 10.0.2.15] [-l port] [-m size] [-nsv] -- [qemu options] >&2
 	exit 2
 }
 
@@ -14,21 +15,20 @@ run()
 }
 
 iso=plan9.iso
-disk=disk.raw
+disks=(disk0.raw)
 ncpu=2
 mem=1G
 
-size=0
-drive="file=$disk,format=raw,id=hd,cache=writethrough"
 cdrom=
 ether=e1000
 ipnet=10.0.2.0/24
 ports=()
+options=()
 
-while getopts :c:d:i:l:m:nsv OPT
+while getopts :a:d:i:l:m:nsv OPT
 do
 	case $OPT in
-	c)	size="$OPTARG"
+	a)	disks+=("$OPTARG")
 		;;
 	i)	ipnet="$OPTARG"
 		;;
@@ -45,8 +45,8 @@ do
 		ports+=("hostfwd=tcp::17010-:17010")
 		;;
 	v)	ether=virtio-net-pci
-		drive="$drive,if=none"
-		disk='virtio-scsi-pci,id=scsi -device scsi-hd,drive=hd'
+		options+=(-device virtio-scsi-pci,id=scsi)
+		virtio=enable
 		;;
 	*)	usage
 		;;
@@ -54,14 +54,23 @@ do
 done
 shift $((OPTIND - 1))
 
-if [[ $size != 0 ]]
-then
-	run qemu-img create $disk $size
-fi
-
-options=()
 options+=(-smp $ncpu)
-options+=(-drive $drive)
+i=0
+disk_opt='format=raw,cache=writethrough'
+for d in "${disks[@]}"
+do
+	id="hd$i"
+
+	if [[ $virtio = enable ]]
+	then
+		options+=(-device scsi-hd,drive=$id)
+		options+=(-drive file=$d,$disk_opt,id=$id,if=none,index=$i)
+	else
+		options+=(-drive file=$d,$disk_opt,id=$id,index=$i)
+	fi
+	((i++))
+done
+options+=(-device $ether,netdev=ether0)
 if (( ${#ports[@]} > 0 ))
 then
 	hostfwd="$(IFS=,; echo "${ports[*]}")"
@@ -69,7 +78,6 @@ then
 else
 	options+=(-netdev user,id=ether0,net=$ipnet)
 fi
-options+=(-device $ether,netdev=ether0)
 
 case $(uname) in
 Darwin)
