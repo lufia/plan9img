@@ -5,13 +5,14 @@ set -e
 
 usage()
 {
-	echo usage: $(basename $0) [[-a disk] ...] [-d iso] [-i 10.0.2.15] [-l port] [-m size] [-sv] -- [qemu options] >&2
+	echo usage: $(basename $0) [[-a disk] ...] [-d iso] [-i 10.0.2.15] [-l port] [-m size] [-nsv] -- [qemu options] >&2
 	exit 2
 }
 
 disks=(disk0.raw)
 ncpu=2
 mem=1G
+execcmd=exec
 
 cdrom=
 ether=e1000
@@ -19,7 +20,7 @@ ipnet=10.0.2.0/24
 ports=()
 options=()
 
-while getopts :a:d:i:l:m:sv OPT
+while getopts :a:d:i:l:m:nsv OPT
 do
 	case $OPT in
 	a)	disks+=("$OPTARG")
@@ -29,6 +30,8 @@ do
 	l)	ports+=("hostfwd=tcp::$OPTARG-:$OPTARG")
 		;;
 	m)	mem="$OPTARG"
+		;;
+	n)	execcmd=echo
 		;;
 	d)	iso="$OPTARG"
 		cdrom="-drive file=$iso,index=2,media=cdrom -boot order=d"
@@ -78,5 +81,4 @@ Darwin)
 Linux)
 	options+=(-machine type=pc,accel=kvm) ;;
 esac
-echo qemu-system-x86_64 -m $mem ${options[@]} $cdrom "$@"
-exec qemu-system-x86_64 -m $mem ${options[@]} $cdrom "$@"
+$execcmd qemu-system-x86_64 -m $mem ${options[@]} $cdrom "$@"
