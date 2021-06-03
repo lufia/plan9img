@@ -40,7 +40,6 @@ do
 		ports+=("hostfwd=tcp::17010-:17010")
 		;;
 	v)	ether=virtio-net-pci
-		options+=(-nographic)
 		options+=(-device virtio-scsi-pci,id=scsi)
 		virtio=enable
 		;;
