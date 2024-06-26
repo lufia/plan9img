@@ -63,7 +63,7 @@ do
 	else
 		options+=(-drive file=$d,$disk_opt,id=$id,index=$i)
 	fi
-	((i++))
+	i=$((i+1))
 done
 options+=(-device $ether,netdev=ether0)
 if (( ${#ports[@]} > 0 ))
