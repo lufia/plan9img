@@ -5,7 +5,7 @@ set -e
 
 usage()
 {
-	echo usage: $(basename $0) [[-a disk] ...] [-d iso] [-i 10.0.2.15] [-l port] [-m size] [-nsv] -- [qemu options] >&2
+	echo usage: $(basename $0) [[-a disk] ...] [[-A disk] ...] [-d iso] [-i 10.0.2.15] [-l port] [-m size] [-u root] [-nsv] -- [qemu options] >&2
 	exit 2
 }
 
@@ -13,17 +13,22 @@ disks=(disk0.raw)
 ncpu=2
 mem=1G
 execcmd=exec
+u9fs=
+tftp=
 
 cdrom=
 ether=e1000
 ipnet=10.0.2.0/24
 ports=()
 options=()
+mac=52:54:00:12:34:56
 
-while getopts :a:d:i:l:m:nsv OPT
+while getopts :a:A:d:i:l:m:u:nsv OPT
 do
 	case $OPT in
 	a)	disks+=("$OPTARG")
+		;;
+	A)	disks=("$OPTARG")
 		;;
 	i)	ipnet="$OPTARG"
 		;;
@@ -38,6 +43,9 @@ do
 		;;
 	s)	ports+=("hostfwd=tcp::567-:567")
 		ports+=("hostfwd=tcp::17010-:17010")
+		;;
+	u)	u9fs="guestfwd=tcp:10.0.2.1:564-cmd:u9fs -a none -u $USER $OPTARG"
+		tftp="tftp=$OPTARG"
 		;;
 	v)	ether=virtio-net-pci
 		options+=(-device virtio-scsi-pci,id=scsi)
@@ -65,13 +73,18 @@ do
 	fi
 	i=$((i+1))
 done
-options+=(-device $ether,netdev=ether0)
+options+=(-device "$ether,netdev=ether0,mac=$mac")
+net="$ipnet"
+if [[ -n $u9fs ]]
+then
+	net="$ipnet,$u9fs,$tftp"
+fi
 if (( ${#ports[@]} > 0 ))
 then
 	hostfwd="$(IFS=,; echo "${ports[*]}")"
-	options+=(-netdev user,id=ether0,net=$ipnet,$hostfwd)
+	options+=(-netdev "user,id=ether0,net=$net,$hostfwd")
 else
-	options+=(-netdev user,id=ether0,net=$ipnet)
+	options+=(-netdev "user,id=ether0,net=$net")
 fi
 
 case $(uname) in
@@ -80,4 +93,4 @@ Darwin)
 Linux)
 	options+=(-machine type=pc,accel=kvm) ;;
 esac
-$execcmd qemu-system-x86_64 -m $mem ${options[@]} $cdrom "$@"
+$execcmd qemu-system-x86_64 -m $mem "${options[@]}" $cdrom "$@"
